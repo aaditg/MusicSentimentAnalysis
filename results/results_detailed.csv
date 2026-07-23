@@ -1,0 +1,33 @@
+modality,dataset,samples,input_features,evaluation,model,accuracy,macro_f1,balanced_accuracy,Q1_f1,Q2_f1,Q3_f1,Q4_f1,notes
+symbolic,EMOPIA,1071,48 MIDI features,5-fold GroupKFold,LogReg (baseline),0.64,0.632,0.634,0.6647,0.681,0.535,0.6489,
+symbolic,EMOPIA,1071,48 MIDI features,5-fold GroupKFold,LogReg balanced,0.644,0.639,0.64,0.6718,0.6797,0.5506,0.6523,
+symbolic,EMOPIA,1071,48 MIDI features,5-fold GroupKFold,LogReg balanced C=2,0.635,0.63,0.632,0.6651,0.6706,0.5387,0.6443,
+symbolic,EMOPIA,1071,48 MIDI features,5-fold GroupKFold,RandomForest,0.637,0.63,0.632,0.6367,0.6621,0.5656,0.6544,
+symbolic,EMOPIA,1071,48 MIDI features,5-fold GroupKFold,HistGradientBoosting,0.631,0.624,0.627,0.6569,0.6653,0.5293,0.6462,
+symbolic,EMOPIA,1071,48 MIDI features,5-fold GroupKFold,LogReg tuned (nested CV),0.639,0.632,0.634,0.6602,0.6816,0.5412,0.6461,"best per-fold: C=0.25, class_weight=None"
+symbolic,EMOPIA,1071,48 MIDI features,5-fold GroupKFold,HistGB tuned (nested CV),0.642,0.636,0.638,0.6451,0.659,0.5797,0.6585,"best per-fold: l2_regularization=1.0, learning_rate=0.1, max_iter=400"
+lyrics,MERGE Lyrics,2568,TF-IDF word+char,5-fold StratifiedKFold,LogReg word 1-2gram (baseline),0.667,0.659,0.661,0.6348,0.7938,0.5982,0.6088,
+lyrics,MERGE Lyrics,2568,TF-IDF word+char,5-fold StratifiedKFold,LogReg balanced,0.668,0.662,0.663,0.6338,0.8104,0.5979,0.6066,
+lyrics,MERGE Lyrics,2568,TF-IDF word+char,5-fold StratifiedKFold,LinearSVC word+char,0.678,0.671,0.672,0.6369,0.8291,0.6205,0.5981,
+lyrics,MERGE Lyrics,2568,TF-IDF word+char,5-fold StratifiedKFold,ComplementNB word,0.67,0.657,0.661,0.6262,0.7882,0.6193,0.5953,
+lyrics,MERGE Lyrics,2568,TF-IDF word+char,5-fold StratifiedKFold,LinearSVC tuned (nested CV),0.697,0.69,0.692,0.6576,0.8476,0.6419,0.6145,"best per-fold: C=0.5, class_weight=None, ngram_range=(1, 2), sublinear_tf=True"
+audio,DEAM,1802,260 openSMILE features,5-fold StratifiedKFold,RandomForest balanced (baseline),0.64,0.395,0.443,0.7264,0.0245,0.7413,0.089,
+audio,DEAM,1802,260 openSMILE features,5-fold StratifiedKFold,RandomForest balanced_subsample,0.64,0.41,0.449,0.7284,0.0705,0.7387,0.1026,
+audio,DEAM,1802,260 openSMILE features,5-fold StratifiedKFold,HistGradientBoosting,0.648,0.438,0.464,0.7423,0.1041,0.7526,0.1537,
+audio,DEAM,1802,260 openSMILE features,5-fold StratifiedKFold,"LogReg balanced (scaled, top-80)",0.558,0.484,0.488,0.6673,0.2686,0.7099,0.2889,
+audio,DEAM,1802,260 openSMILE features,5-fold StratifiedKFold,RandomForest top-80 features,0.648,0.423,0.458,0.7317,0.08,0.7465,0.1356,
+audio,DEAM,1802,260 openSMILE features,5-fold StratifiedKFold,Regression-derived quadrant,0.648,0.483,0.49,0.7418,0.1634,0.7563,0.2713,Quadrant inferred from predicted valence/arousal rather than direct classification.
+audio,DEAM,1802,260 openSMILE features,5-fold StratifiedKFold,RandomForest + SMOTE,0.614,0.494,0.493,0.7142,0.259,0.7206,0.2819,
+audio,DEAM,1802,260 openSMILE features,5-fold StratifiedKFold,HistGB + SMOTE (scaled),0.631,0.471,0.479,0.7347,0.2029,0.7493,0.197,
+audio,DEAM,1802,260 openSMILE features,5-fold StratifiedKFold,Regression-derived + tuned thresholds,0.647,0.472,0.487,0.7387,0.1202,0.757,0.2717,"best per-fold: v_thr=4.88, a_thr=5.0"
+fusion,MERGE Bimodal,2216,TF-IDF + 101 librosa,5-fold StratifiedKFold,Lyrics only,0.692,0.677,0.678,0.6522,0.8484,0.6146,0.5932,
+fusion,MERGE Bimodal,2216,TF-IDF + 101 librosa,5-fold StratifiedKFold,Audio only,0.648,0.625,0.629,0.6558,0.857,0.5018,0.4862,
+fusion,MERGE Bimodal,2216,TF-IDF + 101 librosa,5-fold StratifiedKFold,Fused (audio + lyrics),0.752,0.738,0.738,0.7491,0.9154,0.664,0.6215,
+fusion,MERGE Bimodal,2216,TF-IDF + 101 librosa,5-fold StratifiedKFold,Fused + SVD(300),0.746,0.73,0.731,0.7341,0.9152,0.6599,0.6113,
+fusion,MERGE Bimodal,2216,TF-IDF + 101 librosa,5-fold StratifiedKFold,Weighted late fusion (nested CV),0.758,0.743,0.744,0.7506,0.9283,0.6733,0.6212,best per-fold lyrics weight mode=0.6
+transformer,MERGE Lyrics,384,raw lyrics text,official 70/15/15 test,LinearSVC reference (official split),0.672,0.665,0.665,0.6118,0.8182,0.6395,0.5922,
+transformer,MERGE Lyrics,384,raw lyrics text,official 70/15/15 test,DistilBERT fine-tuned (3 epochs),0.724,0.716,0.715,0.6623,0.8818,0.6595,0.6603,
+llm,MERGE Lyrics,384,raw lyrics text,official 70/15/15 test,gpt-4.1-mini (zero-shot),0.716,0.712,0.716,0.7143,0.8079,0.7143,0.6127,
+llm,MERGE Lyrics,384,raw lyrics text,official 70/15/15 test,gpt-4.1-mini (few-shot),0.706,0.697,0.703,0.6701,0.8165,0.7282,0.5714,
+llm,MERGE Lyrics,384,raw lyrics text,official 70/15/15 test,gpt-5.5 (zero-shot),0.773,0.764,0.77,0.7471,0.87,0.7902,0.6506,
+llm,MERGE Lyrics,384,raw lyrics text,official 70/15/15 test,gpt-5.5 (few-shot),0.763,0.751,0.76,0.7403,0.8546,0.798,0.6115,

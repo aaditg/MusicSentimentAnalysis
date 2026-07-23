@@ -1,0 +1,11 @@
+numpy
+pandas
+scikit-learn
+pyyaml
+mido
+librosa
+soundfile
+torch
+transformers
+accelerate
+openai

@@ -1,0 +1,13 @@
+__pycache__/
+*.pyc
+.DS_Store
+.venv/
+venv/
+data/raw/
+data/interim/
+data/processed/
+results/*
+!results/EXPERIMENTS.md
+!results/experiments.jsonl
+!results/results_summary.csv
+!results/results_detailed.csv
