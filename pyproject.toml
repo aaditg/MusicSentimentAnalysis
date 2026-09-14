@@ -27,6 +27,7 @@ dev = ["ruff", "pytest"]
 [project.scripts]
 music-emotion = "music_emotion.main:main"
 music-emotion-predict = "music_emotion.predict:main"
+music-emotion-app = "music_emotion.app:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]

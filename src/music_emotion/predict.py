@@ -9,7 +9,7 @@ import joblib
 import numpy as np
 import pandas as pd
 
-from .fusion_baseline import LateFusion, load_bimodal
+from .fusion_baseline import AudioOnly, LateFusion, load_bimodal
 from .labels import QUADRANTS
 from .merge_audio_features import clip_features
 
@@ -23,14 +23,24 @@ C = 1.0
 
 
 def train(
-    raw_dir: Path = RAW, processed_dir: Path = PROCESSED, model_path: Path = MODEL_PATH
+    raw_dir: Path = RAW,
+    processed_dir: Path = PROCESSED,
+    model_path: Path = MODEL_PATH,
+    audio_only: bool = False,
 ) -> Path:
-    frame, labels, audio_columns = load_bimodal(raw_dir, processed_dir)
-    model = LateFusion(audio_columns, weight=LYRICS_WEIGHT, C=C)
+    frame, labels, audio_columns = load_bimodal(raw_dir, processed_dir, with_lyrics=not audio_only)
+    if audio_only:
+        model = AudioOnly(audio_columns, C=C)
+    else:
+        model = LateFusion(audio_columns, weight=LYRICS_WEIGHT, C=C)
     model.fit(frame, labels)
     model_path.parent.mkdir(parents=True, exist_ok=True)
-    joblib.dump({"model": model, "audio_columns": audio_columns}, model_path)
-    print(f"saved: {model_path} (trained on {len(frame)} paired songs)")
+    joblib.dump(
+        {"model": model, "audio_columns": audio_columns, "audio_only": audio_only},
+        model_path,
+    )
+    kind = "audio-only" if audio_only else "audio + lyrics"
+    print(f"saved: {model_path} ({kind}, trained on {len(frame)} songs)")
     return model_path
 
 
@@ -92,6 +102,11 @@ def main() -> None:
     train_parser.add_argument("--raw-dir", type=Path, default=RAW)
     train_parser.add_argument("--processed-dir", type=Path, default=PROCESSED)
     train_parser.add_argument("--model", type=Path, default=MODEL_PATH)
+    train_parser.add_argument(
+        "--audio-only",
+        action="store_true",
+        help="fit only the audio branch; skips reading the lyrics corpus",
+    )
 
     run_parser = sub.add_parser("song", help="score one song")
     run_parser.add_argument("--audio", type=Path, required=True)
@@ -100,7 +115,7 @@ def main() -> None:
 
     args = parser.parse_args()
     if args.command == "train":
-        train(args.raw_dir, args.processed_dir, args.model)
+        train(args.raw_dir, args.processed_dir, args.model, args.audio_only)
     else:
         print(format_prediction(predict(args.audio, args.lyrics, args.model)))
 

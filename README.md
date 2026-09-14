@@ -52,12 +52,32 @@ Train the fusion model once, then point it at any track:
 python -m music_emotion.predict train
 ```
 
+`--audio-only` fits just the audio branch and skips reading the lyrics corpus entirely, which is
+much faster and is what the timeline uses:
+
+```bash
+python -m music_emotion.predict train --audio-only --model models/audio.joblib
+```
+
 ```bash
 python -m music_emotion.predict song --audio track.mp3 --lyrics track.txt
 ```
 
 The audio must be a decodable file (MP3, FLAC, WAV). DRM-protected downloads from streaming
 services will not load.
+
+## Desktop app
+
+```bash
+python -m music_emotion.app
+```
+
+A native Tk window: pick a song, optionally a lyrics file, and get the dominant quadrant, the
+valence/arousal timeline, the trajectory plotted in circumplex space, a per-window table, and the
+benchmark results. If no model exists yet it trains an audio-only one on first run.
+
+Tkinter ships with most Python builds; on Homebrew Python install it with
+`brew install python-tk@3.12`.
 
 ## Emotion over time
 

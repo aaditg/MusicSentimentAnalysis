@@ -47,9 +47,28 @@ def summarise_signal(signal: np.ndarray, sr: int) -> dict[str, float]:
     summarise("zcr", librosa.feature.zero_crossing_rate(signal))
     summarise("rms", librosa.feature.rms(y=signal))
 
-    tempo = librosa.beat.tempo(y=signal, sr=sr)
+    tempo = _tempo(librosa, signal, sr)
     row["tempo"] = float(tempo[0]) if len(tempo) else 0.0
     return row
+
+
+def _tempo(librosa, signal: np.ndarray, sr: int):
+    """Tempo estimate across librosa versions.
+
+    ``librosa.beat.tempo`` moved to ``librosa.feature.rhythm.tempo`` in 1.0.
+    Same estimator either way, so features stay comparable to the trained model.
+    """
+    for accessor in (
+        lambda: librosa.feature.tempo,
+        lambda: librosa.feature.rhythm.tempo,
+        lambda: librosa.beat.tempo,
+    ):
+        try:
+            estimator = accessor()
+        except AttributeError:
+            continue
+        return estimator(y=signal, sr=sr)
+    raise AttributeError("no tempo estimator found in this librosa version")
 
 
 def aggregate_merge_bimodal(raw_dir: Path, processed_dir: Path) -> Path:

@@ -65,6 +65,35 @@ class LateFusion(BaseEstimator, ClassifierMixin):
         return self.classes_[np.argmax(scores, axis=1)]
 
 
+class AudioOnly:
+    """The audio branch on its own, shaped like LateFusion for downstream use.
+
+    Useful when the lyrics corpus is unavailable, and for timelines, where
+    lyrics cannot vary window to window anyway.
+    """
+
+    def __init__(self, audio_columns: list[str], C: float = 1.0):
+        self.audio_columns = audio_columns
+        self.C = C
+
+    def fit(self, X, y):
+        self.classes_ = np.array(sorted(pd.Series(y).unique()))
+        self.audio_ = Pipeline(
+            [
+                ("pre", ColumnTransformer([("audio", _audio_pipeline(), self.audio_columns)])),
+                ("model", LinearSVC(C=self.C)),
+            ]
+        )
+        self.audio_.fit(X, y)
+        return self
+
+    def decision_function(self, X):
+        return self.audio_.decision_function(X)
+
+    def predict(self, X):
+        return self.classes_[np.argmax(self.decision_function(X), axis=1)]
+
+
 def _lyrics_vectorizer() -> FeatureUnion:
     return FeatureUnion(
         [
@@ -86,18 +115,23 @@ def _audio_pipeline() -> Pipeline:
     )
 
 
-def load_bimodal(raw_dir: Path, processed_dir: Path):
+def load_bimodal(raw_dir: Path, processed_dir: Path, with_lyrics: bool = True):
+    """Paired audio features and lyrics for the MERGE bimodal set.
+
+    ``with_lyrics=False`` skips reading the lyrics corpus entirely, which is
+    what the audio-only model needs and avoids touching thousands of files.
+    """
     labels = pd.read_csv(processed_dir / "merge_bimodal.csv")
     audio = pd.read_csv(processed_dir / "merge_bimodal_audio_features.csv")
     merged = labels.merge(audio, on="sample_id", how="inner")
     audio_columns = [c for c in audio.columns if c != "sample_id"]
 
-    texts = [
-        (raw_dir / path).read_text(encoding="utf-8", errors="replace")
-        for path in merged["lyrics_path"]
-    ]
     frame = merged[audio_columns].copy()
-    frame["text"] = texts
+    if with_lyrics:
+        frame["text"] = [
+            (raw_dir / path).read_text(encoding="utf-8", errors="replace")
+            for path in merged["lyrics_path"]
+        ]
     return frame, merged["quadrant"], audio_columns
 
 
