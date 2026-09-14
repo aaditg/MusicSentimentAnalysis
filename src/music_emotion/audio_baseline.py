@@ -14,7 +14,6 @@ from sklearn.model_selection import train_test_split
 
 from .labels import quadrant_from_values
 
-
 LABEL_COLUMNS = {
     "sample_id",
     "source",
@@ -86,7 +85,8 @@ def train_audio_baseline(data_path: Path) -> str:
         f"Audio features: {len(feature_columns)}",
         "Model: valence/arousal regression -> quadrant (threshold at 5.0)",
         f"Quadrant accuracy: {accuracy_score(frame.loc[test, 'quadrant'], predictions):.3f}",
-        f"Balanced accuracy: {balanced_accuracy_score(frame.loc[test, 'quadrant'], predictions):.3f}",
+        "Balanced accuracy: "
+        f"{balanced_accuracy_score(frame.loc[test, 'quadrant'], predictions):.3f}",
         "",
         classification_report(frame.loc[test, "quadrant"], predictions, zero_division=0),
         "Regression",

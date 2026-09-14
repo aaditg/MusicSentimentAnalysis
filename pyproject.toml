@@ -1,0 +1,46 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "music-emotion"
+version = "0.1.0"
+description = "Multimodal music emotion recognition: symbolic, lyrics, audio, and fusion"
+requires-python = ">=3.10"
+dependencies = [
+    "numpy",
+    "pandas",
+    "scikit-learn",
+    "scipy",
+    "joblib",
+    "pyyaml",
+    "mido",
+    "librosa",
+    "soundfile",
+]
+
+[project.optional-dependencies]
+transformer = ["torch", "transformers", "accelerate"]
+llm = ["openai"]
+dev = ["ruff", "pytest"]
+
+[project.scripts]
+music-emotion = "music_emotion.main:main"
+music-emotion-predict = "music_emotion.predict:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+# B905: zip(strict=) - new code passes it explicitly; the training modules
+# predate the rule and adding it there would change runtime behaviour.
+ignore = ["B008", "B905"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

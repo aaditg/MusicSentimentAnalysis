@@ -1,6 +1,6 @@
 import unittest
 
-from src.music_emotion.labels import label_columns, quadrant_from_values
+from music_emotion.labels import label_columns, quadrant_from_values
 
 
 class LabelTests(unittest.TestCase):

@@ -79,8 +79,10 @@ def run_ablation(raw_dir: Path = RAW, processed_dir: Path = PROCESSED) -> str:
         "| Setting | Macro-F1 | Balanced acc | vs fused |",
         "|---|---|---|---|",
         f"| Fused (audio + lyrics) | {fused_f1:.3f} | {fused.balanced_acc_mean:.3f} | - |",
-        f"| Drop audio (lyrics only) | {lyrics_f1:.3f} | {scores['Lyrics only'].balanced_acc_mean:.3f} | {lyrics_f1 - fused_f1:+.3f} |",
-        f"| Drop lyrics (audio only) | {audio_f1:.3f} | {scores['Audio only'].balanced_acc_mean:.3f} | {audio_f1 - fused_f1:+.3f} |",
+        f"| Drop audio (lyrics only) | {lyrics_f1:.3f} | "
+        f"{scores['Lyrics only'].balanced_acc_mean:.3f} | {lyrics_f1 - fused_f1:+.3f} |",
+        f"| Drop lyrics (audio only) | {audio_f1:.3f} | "
+        f"{scores['Audio only'].balanced_acc_mean:.3f} | {audio_f1 - fused_f1:+.3f} |",
         "",
         f"- Marginal value of **adding audio** to lyrics: {fused_f1 - lyrics_f1:+.3f} macro-F1",
         f"- Marginal value of **adding lyrics** to audio: {fused_f1 - audio_f1:+.3f} macro-F1",

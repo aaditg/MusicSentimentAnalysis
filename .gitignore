@@ -11,3 +11,6 @@ results/*
 !results/experiments.jsonl
 !results/results_summary.csv
 !results/results_detailed.csv
+models/
+results/timelines/
+!results/figures/

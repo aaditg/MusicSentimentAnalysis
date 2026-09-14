@@ -12,7 +12,7 @@ import pandas as pd
 from sklearn.metrics import classification_report
 
 from .labels import QUADRANTS
-from .lyrics_transformer import RAW, PROCESSED, load_lyrics_split, metric_block
+from .lyrics_transformer import PROCESSED, RAW, load_lyrics_split, metric_block
 from .results_log import Experiment, log_experiment
 
 CACHE_DIR = Path("results/_llm_cache")

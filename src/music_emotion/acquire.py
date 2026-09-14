@@ -5,7 +5,6 @@ from zipfile import ZipFile
 
 from .sources import BLOCKED_ARTIFACTS, PHASE_0_2_ARTIFACTS, Artifact
 
-
 CHUNK_SIZE = 1024 * 1024
 
 

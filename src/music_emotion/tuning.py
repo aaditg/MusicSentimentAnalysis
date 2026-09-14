@@ -5,6 +5,8 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
+from imblearn.over_sampling import SMOTE
+from imblearn.pipeline import Pipeline as ImbPipeline
 from sklearn.compose import ColumnTransformer
 from sklearn.ensemble import (
     HistGradientBoostingClassifier,
@@ -25,8 +27,6 @@ from sklearn.naive_bayes import ComplementNB
 from sklearn.pipeline import FeatureUnion, Pipeline
 from sklearn.preprocessing import MinMaxScaler, OneHotEncoder, StandardScaler
 from sklearn.svm import LinearSVC
-from imblearn.over_sampling import SMOTE
-from imblearn.pipeline import Pipeline as ImbPipeline
 
 from .audio_baseline import audio_feature_columns
 from .evaluate import CVResult, cv_classification, nested_cv_search
@@ -473,7 +473,10 @@ def run_audio_regression_quadrant(frame, X, feature_cols, splitter):
             config=f"5-fold; 2x RF regressor on V/A, threshold at 5.0; {len(feature_cols)} feats",
             metrics=result.as_dict(),
             primary_metric="balanced_acc_mean",
-            notes="Quadrant inferred from predicted valence/arousal rather than direct classification.",
+            notes=(
+                "Quadrant inferred from predicted valence/arousal "
+                "rather than direct classification."
+            ),
         )
     )
 

@@ -16,6 +16,16 @@ def clip_features(path: Path) -> dict[str, float]:
     signal, sr = librosa.load(path, sr=SAMPLE_RATE, mono=True, duration=DURATION)
     if signal.size == 0:
         raise ValueError(f"empty audio: {path}")
+    return summarise_signal(signal, sr)
+
+
+def summarise_signal(signal: np.ndarray, sr: int) -> dict[str, float]:
+    """Feature row for one already-loaded mono signal.
+
+    Shared by whole-clip extraction and the sliding-window timeline so both
+    produce identical columns.
+    """
+    import librosa
 
     row: dict[str, float] = {}
 
