@@ -6,6 +6,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 from sklearn.base import BaseEstimator, ClassifierMixin
+from sklearn.calibration import CalibratedClassifierCV
 from sklearn.compose import ColumnTransformer
 from sklearn.decomposition import TruncatedSVD
 from sklearn.feature_extraction.text import TfidfVectorizer
@@ -24,22 +25,29 @@ SEED = 42
 
 
 class LateFusion(BaseEstimator, ClassifierMixin):
-    def __init__(self, audio_columns, weight: float = 0.5, C: float = 1.0):
+    def __init__(
+        self,
+        audio_columns,
+        weight: float = 0.5,
+        C: float = 1.0,
+        calibrate: bool = False,
+    ):
         self.audio_columns = audio_columns
         self.weight = weight
         self.C = C
+        self.calibrate = calibrate
 
     def _build(self):
         lyrics = Pipeline(
             [
                 ("pre", ColumnTransformer([("lyrics", _lyrics_vectorizer(), "text")])),
-                ("model", LinearSVC(C=self.C)),
+                ("model", _svc(self.C, self.calibrate)),
             ]
         )
         audio = Pipeline(
             [
                 ("pre", ColumnTransformer([("audio", _audio_pipeline(), self.audio_columns)])),
-                ("model", LinearSVC(C=self.C)),
+                ("model", _svc(self.C, self.calibrate)),
             ]
         )
         return lyrics, audio
@@ -49,13 +57,24 @@ class LateFusion(BaseEstimator, ClassifierMixin):
         self.lyrics_, self.audio_ = self._build()
         self.lyrics_.fit(X, y)
         self.audio_.fit(X, y)
-        ls = self.lyrics_.decision_function(X)
-        as_ = self.audio_.decision_function(X)
-        self._l_mu, self._l_sd = ls.mean(0), ls.std(0) + 1e-9
-        self._a_mu, self._a_sd = as_.mean(0), as_.std(0) + 1e-9
+        if not self.calibrate:
+            ls = self.lyrics_.decision_function(X)
+            as_ = self.audio_.decision_function(X)
+            self._l_mu, self._l_sd = ls.mean(0), ls.std(0) + 1e-9
+            self._a_mu, self._a_sd = as_.mean(0), as_.std(0) + 1e-9
         return self
 
+    def predict_proba(self, X):
+        """Linear opinion pool of the two calibrated branches."""
+        if not self.calibrate:
+            raise AttributeError("fit with calibrate=True to get probabilities")
+        lyrics = self.lyrics_.predict_proba(X)
+        audio = self.audio_.predict_proba(X)
+        return self.weight * lyrics + (1.0 - self.weight) * audio
+
     def decision_function(self, X):
+        if self.calibrate:
+            return self.predict_proba(X)
         ls = (self.lyrics_.decision_function(X) - self._l_mu) / self._l_sd
         as_ = (self.audio_.decision_function(X) - self._a_mu) / self._a_sd
         return self.weight * ls + (1.0 - self.weight) * as_
@@ -72,26 +91,46 @@ class AudioOnly:
     lyrics cannot vary window to window anyway.
     """
 
-    def __init__(self, audio_columns: list[str], C: float = 1.0):
+    def __init__(self, audio_columns: list[str], C: float = 1.0, calibrate: bool = False):
         self.audio_columns = audio_columns
         self.C = C
+        self.calibrate = calibrate
 
     def fit(self, X, y):
         self.classes_ = np.array(sorted(pd.Series(y).unique()))
         self.audio_ = Pipeline(
             [
                 ("pre", ColumnTransformer([("audio", _audio_pipeline(), self.audio_columns)])),
-                ("model", LinearSVC(C=self.C)),
+                ("model", _svc(self.C, self.calibrate)),
             ]
         )
         self.audio_.fit(X, y)
         return self
 
+    def predict_proba(self, X):
+        if not self.calibrate:
+            raise AttributeError("fit with calibrate=True to get probabilities")
+        return self.audio_.predict_proba(X)
+
     def decision_function(self, X):
+        if self.calibrate:
+            return self.predict_proba(X)
         return self.audio_.decision_function(X)
 
     def predict(self, X):
         return self.classes_[np.argmax(self.decision_function(X), axis=1)]
+
+
+def _svc(C: float, calibrate: bool):
+    """LinearSVC, optionally Platt-scaled into calibrated probabilities.
+
+    Sigmoid rather than isotonic: isotonic can fit any monotonic distortion but
+    overfits on a few thousand samples, which is all this dataset has.
+    """
+    model = LinearSVC(C=C)
+    if calibrate:
+        return CalibratedClassifierCV(model, method="sigmoid", cv=5)
+    return model
 
 
 def _lyrics_vectorizer() -> FeatureUnion:

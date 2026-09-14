@@ -27,20 +27,27 @@ def train(
     processed_dir: Path = PROCESSED,
     model_path: Path = MODEL_PATH,
     audio_only: bool = False,
+    calibrate: bool = True,
 ) -> Path:
     frame, labels, audio_columns = load_bimodal(raw_dir, processed_dir, with_lyrics=not audio_only)
     if audio_only:
-        model = AudioOnly(audio_columns, C=C)
+        model = AudioOnly(audio_columns, C=C, calibrate=calibrate)
     else:
-        model = LateFusion(audio_columns, weight=LYRICS_WEIGHT, C=C)
+        model = LateFusion(audio_columns, weight=LYRICS_WEIGHT, C=C, calibrate=calibrate)
     model.fit(frame, labels)
     model_path.parent.mkdir(parents=True, exist_ok=True)
     joblib.dump(
-        {"model": model, "audio_columns": audio_columns, "audio_only": audio_only},
+        {
+            "model": model,
+            "audio_columns": audio_columns,
+            "audio_only": audio_only,
+            "calibrated": calibrate,
+        },
         model_path,
     )
     kind = "audio-only" if audio_only else "audio + lyrics"
-    print(f"saved: {model_path} ({kind}, trained on {len(frame)} songs)")
+    scale = "calibrated probabilities" if calibrate else "raw margins"
+    print(f"saved: {model_path} ({kind}, {scale}, trained on {len(frame)} songs)")
     return model_path
 
 
@@ -59,36 +66,51 @@ def predict(audio_path: Path, lyrics_path: Path, model_path: Path = MODEL_PATH) 
     bundle = joblib.load(model_path)
     model, audio_columns = bundle["model"], bundle["audio_columns"]
 
+    calibrated = bool(bundle.get("calibrated", False))
+
     frame = _row(audio_path, lyrics_path, audio_columns)
     scores = model.decision_function(frame)[0]
     quadrant = str(model.classes_[int(np.argmax(scores))])
     valence, arousal = QUADRANTS[quadrant]
 
-    audio_scores = model.audio_.decision_function(frame)[0]
     per_class = {str(c): float(s) for c, s in zip(model.classes_, scores)}
     result = {
         "quadrant": quadrant,
         "valence": valence,
         "arousal": arousal,
         "scores": per_class,
-        "audio_only": str(model.classes_[int(np.argmax(audio_scores))]),
+        "calibrated": calibrated,
+        "confidence": float(np.max(scores)) if calibrated else None,
+        "audio_only": str(model.classes_[int(np.argmax(_branch(model.audio_, frame)))]),
     }
     # An audio-only model has no lyrics branch to report on.
     if hasattr(model, "lyrics_"):
-        lyrics_scores = model.lyrics_.decision_function(frame)[0]
-        result["lyrics_only"] = str(model.classes_[int(np.argmax(lyrics_scores))])
+        result["lyrics_only"] = str(model.classes_[int(np.argmax(_branch(model.lyrics_, frame)))])
     return result
 
 
+def _branch(pipeline, frame):
+    """One branch's per-class scores, calibrated or not."""
+    if hasattr(pipeline, "predict_proba"):
+        return pipeline.predict_proba(frame)[0]
+    return pipeline.decision_function(frame)[0]
+
+
 def format_prediction(result: dict) -> str:
-    lines = [
+    headline = (
         f"Quadrant:  {result['quadrant']}  "
-        f"(valence {result['valence']}, arousal {result['arousal']})",
+        f"(valence {result['valence']}, arousal {result['arousal']})"
+    )
+    if result.get("calibrated"):
+        headline += f"   confidence {result['confidence']:.0%}"
+    lines = [
+        headline,
         "",
-        "Fused scores:",
+        "Probabilities:" if result.get("calibrated") else "Fused scores:",
     ]
     for name, score in sorted(result["scores"].items(), key=lambda kv: -kv[1]):
-        lines.append(f"  {name}  {score:+.3f}")
+        shown = f"{score:6.1%}" if result.get("calibrated") else f"{score:+.3f}"
+        lines.append(f"  {name}  {shown}")
     lines.append("")
     if "lyrics_only" in result:
         lines.append(f"Lyrics alone: {result['lyrics_only']}")
@@ -109,6 +131,11 @@ def main() -> None:
         action="store_true",
         help="fit only the audio branch; skips reading the lyrics corpus",
     )
+    train_parser.add_argument(
+        "--no-calibrate",
+        action="store_true",
+        help="skip Platt scaling and keep raw, unbounded SVM margins",
+    )
 
     run_parser = sub.add_parser("song", help="score one song")
     run_parser.add_argument("--audio", type=Path, required=True)
@@ -117,7 +144,13 @@ def main() -> None:
 
     args = parser.parse_args()
     if args.command == "train":
-        train(args.raw_dir, args.processed_dir, args.model, args.audio_only)
+        train(
+            args.raw_dir,
+            args.processed_dir,
+            args.model,
+            args.audio_only,
+            calibrate=not args.no_calibrate,
+        )
     else:
         print(format_prediction(predict(args.audio, args.lyrics, args.model)))
 

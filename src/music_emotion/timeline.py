@@ -48,6 +48,12 @@ class Window:
     valence: float
     arousal: float
     scores: dict[str, float]
+    calibrated: bool = False
+
+    @property
+    def confidence(self) -> float | None:
+        """Probability of the winning quadrant, when the model is calibrated."""
+        return max(self.scores.values()) if self.calibrated else None
 
     @property
     def label(self) -> str:
@@ -79,9 +85,17 @@ def window_features(
     return rows
 
 
-def circumplex(scores: dict[str, float]) -> tuple[float, float]:
+def circumplex(scores: dict[str, float], probabilities: bool = False) -> tuple[float, float]:
+    """Project quadrant scores onto the valence/arousal axes.
+
+    With calibrated probabilities the four values sum to 1, so the result is an
+    expectation already bounded to [-1, 1] and comparable across songs. Raw SVM
+    margins have arbitrary scale, so they are only halved to keep the old shape.
+    """
     valence = (scores["Q1"] + scores["Q4"]) - (scores["Q2"] + scores["Q3"])
     arousal = (scores["Q1"] + scores["Q2"]) - (scores["Q3"] + scores["Q4"])
+    if probabilities:
+        return valence, arousal
     return valence / 2.0, arousal / 2.0
 
 
@@ -102,6 +116,7 @@ def analyse(
         )
     bundle = joblib.load(model_path)
     model, audio_columns = bundle["model"], bundle["audio_columns"]
+    calibrated = bool(bundle.get("calibrated", False))
 
     windows = window_features(audio_path, window, hop)
     if not windows:
@@ -118,13 +133,17 @@ def analyse(
         frame_for_model = frame.copy()
         frame_for_model["text"] = lyrics_path.read_text(encoding="utf-8", errors="replace")
 
-    matrix = scorer.decision_function(frame_for_model)
+    if calibrated and hasattr(scorer, "predict_proba"):
+        matrix = scorer.predict_proba(frame_for_model)
+    else:
+        matrix = scorer.decision_function(frame_for_model)
+        calibrated = False
     classes = [str(c) for c in model.classes_]
 
     results = []
     for (start, end, _), row in zip(windows, matrix, strict=True):
         scores = {c: float(s) for c, s in zip(classes, row, strict=True)}
-        valence, arousal = circumplex(scores)
+        valence, arousal = circumplex(scores, probabilities=calibrated)
         results.append(
             Window(
                 start=start,
@@ -133,6 +152,7 @@ def analyse(
                 valence=valence,
                 arousal=arousal,
                 scores=scores,
+                calibrated=calibrated,
             )
         )
     return results
@@ -140,10 +160,17 @@ def analyse(
 
 def format_timeline(windows: list[Window], title: str) -> str:
     lines = [title, "=" * len(title), ""]
-    lines.append(f"{'time':<14}{'quadrant':<16}{'valence':>9}{'arousal':>9}")
+    calibrated = bool(windows and windows[0].calibrated)
+    header = f"{'time':<14}{'quadrant':<16}{'valence':>9}{'arousal':>9}"
+    if calibrated:
+        header += f"{'conf':>8}"
+    lines.append(header)
     for w in windows:
         span = f"{_timestamp(w.start)}-{_timestamp(w.end)}"
-        lines.append(f"{span:<14}{w.label:<16}{w.valence:>+9.2f}{w.arousal:>+9.2f}")
+        row = f"{span:<14}{w.label:<16}{w.valence:>+9.2f}{w.arousal:>+9.2f}"
+        if calibrated:
+            row += f"{w.confidence:>8.0%}"
+        lines.append(row)
 
     counts: dict[str, int] = {}
     for w in windows:
@@ -176,6 +203,13 @@ def write_csv(windows: list[Window], path: Path) -> Path:
     return path
 
 
+def _axis_limit(windows: list[Window]) -> float:
+    """Fixed +/-1 for calibrated output so charts compare across songs."""
+    if windows and windows[0].calibrated:
+        return 1.0
+    return max(1e-6, max(max(abs(w.valence), abs(w.arousal)) for w in windows) * 1.15)
+
+
 def render_svg(windows: list[Window], title: str, subtitle: str, width: int = 900) -> str:
     left, right, top, bottom = 60, 110, 74, 92
     plot_height = 220
@@ -184,7 +218,7 @@ def render_svg(windows: list[Window], title: str, subtitle: str, width: int = 90
     plot_width = width - left - right
 
     span = windows[-1].end - windows[0].start
-    limit = max(1e-6, max(max(abs(w.valence), abs(w.arousal)) for w in windows) * 1.15)
+    limit = _axis_limit(windows)
 
     def x_of(t: float) -> float:
         return left + plot_width * ((t - windows[0].start) / span)

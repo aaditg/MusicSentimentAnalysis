@@ -15,7 +15,14 @@ from pathlib import Path
 from tkinter import filedialog, messagebox, ttk
 
 from .predict import MODEL_PATH
-from .timeline import QUADRANT_COLORS, QUADRANT_NAMES, Window, _timestamp, write_csv
+from .timeline import (
+    QUADRANT_COLORS,
+    QUADRANT_NAMES,
+    Window,
+    _axis_limit,
+    _timestamp,
+    write_csv,
+)
 
 BG = "#f7f7f5"
 PANEL = "#ffffff"
@@ -104,7 +111,7 @@ class TimelineChart(ttk.Frame):
 
         windows = self.windows
         span = max(windows[-1].end - windows[0].start, 1e-6)
-        limit = max(max(abs(w.valence), abs(w.arousal)) for w in windows) * 1.15 or 1.0
+        limit = _axis_limit(windows)
 
         def x_of(t: float) -> float:
             return left + plot_w * ((t - windows[0].start) / span)
@@ -246,7 +253,7 @@ class Circumplex(ttk.Frame):
         size = min(width, height) - 80
         cx, cy = width / 2, height / 2
         half = size / 2
-        limit = max(max(abs(w.valence), abs(w.arousal)) for w in self.windows) * 1.15 or 1.0
+        limit = _axis_limit(self.windows)
 
         quadrant_at = {
             "Q1": (cx + half / 2, cy - half / 2),
@@ -438,9 +445,9 @@ class App(tk.Tk):
 
     def _build_table(self, parent) -> ttk.Frame:
         frame = ttk.Frame(parent)
-        columns = ("time", "quadrant", "valence", "arousal")
+        columns = ("time", "quadrant", "valence", "arousal", "confidence")
         tree = ttk.Treeview(frame, columns=columns, show="headings")
-        for name, width in zip(columns, (140, 160, 100, 100), strict=True):
+        for name, width in zip(columns, (140, 160, 100, 100, 100), strict=True):
             tree.heading(name, text=name.capitalize())
             tree.column(name, width=width, anchor="w")
         scroll = ttk.Scrollbar(frame, orient="vertical", command=tree.yview)
@@ -573,6 +580,7 @@ class App(tk.Tk):
                     f"{w.quadrant} {QUADRANT_NAMES[w.quadrant]}",
                     f"{w.valence:+.2f}",
                     f"{w.arousal:+.2f}",
+                    f"{w.confidence:.0%}" if w.calibrated else "-",
                 ),
             )
 
