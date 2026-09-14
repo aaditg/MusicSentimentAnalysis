@@ -64,17 +64,20 @@ def predict(audio_path: Path, lyrics_path: Path, model_path: Path = MODEL_PATH) 
     quadrant = str(model.classes_[int(np.argmax(scores))])
     valence, arousal = QUADRANTS[quadrant]
 
-    lyrics_scores = model.lyrics_.decision_function(frame)[0]
     audio_scores = model.audio_.decision_function(frame)[0]
     per_class = {str(c): float(s) for c, s in zip(model.classes_, scores)}
-    return {
+    result = {
         "quadrant": quadrant,
         "valence": valence,
         "arousal": arousal,
         "scores": per_class,
-        "lyrics_only": str(model.classes_[int(np.argmax(lyrics_scores))]),
         "audio_only": str(model.classes_[int(np.argmax(audio_scores))]),
     }
+    # An audio-only model has no lyrics branch to report on.
+    if hasattr(model, "lyrics_"):
+        lyrics_scores = model.lyrics_.decision_function(frame)[0]
+        result["lyrics_only"] = str(model.classes_[int(np.argmax(lyrics_scores))])
+    return result
 
 
 def format_prediction(result: dict) -> str:
@@ -86,11 +89,10 @@ def format_prediction(result: dict) -> str:
     ]
     for name, score in sorted(result["scores"].items(), key=lambda kv: -kv[1]):
         lines.append(f"  {name}  {score:+.3f}")
-    lines += [
-        "",
-        f"Lyrics alone: {result['lyrics_only']}",
-        f"Audio alone:  {result['audio_only']}",
-    ]
+    lines.append("")
+    if "lyrics_only" in result:
+        lines.append(f"Lyrics alone: {result['lyrics_only']}")
+    lines.append(f"Audio alone:  {result['audio_only']}")
     return "\n".join(lines)
 
 
