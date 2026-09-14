@@ -107,9 +107,7 @@ def run_symbolic():
 
     n_feats = len(category) + len(numbers)
     for name, model in trials:
-        result = cv_classification(
-            symbolic_pipeline(model, numbers), X, y, splitter, groups=groups
-        )
+        result = cv_classification(symbolic_pipeline(model, numbers), X, y, splitter, groups=groups)
         print(f"[symbolic] {name}: {result.summary()}")
         log_experiment(
             Experiment(
@@ -141,9 +139,7 @@ def run_symbolic():
         ),
     ]
     for name, estimator, grid in sweeps:
-        result, chosen = nested_cv_search(
-            estimator, grid, X, y, splitter, inner, groups=groups
-        )
+        result, chosen = nested_cv_search(estimator, grid, X, y, splitter, inner, groups=groups)
         print(f"[symbolic] {name}: {result.summary()}")
         log_experiment(
             Experiment(
@@ -159,8 +155,7 @@ def run_symbolic():
 def load_lyrics():
     frame = pd.read_csv(PROCESSED / "merge_lyrics.csv")
     texts = [
-        (RAW / path).read_text(encoding="utf-8", errors="replace")
-        for path in frame["lyrics_path"]
+        (RAW / path).read_text(encoding="utf-8", errors="replace") for path in frame["lyrics_path"]
     ]
     return texts, frame["quadrant"]
 
@@ -175,9 +170,7 @@ def run_lyrics():
             ("word", TfidfVectorizer(max_features=10000, ngram_range=(1, 2))),
             (
                 "char",
-                TfidfVectorizer(
-                    analyzer="char_wb", ngram_range=(3, 5), max_features=20000
-                ),
+                TfidfVectorizer(analyzer="char_wb", ngram_range=(3, 5), max_features=20000),
             ),
         ]
     )
@@ -340,9 +333,7 @@ def run_audio():
                     ("select", SelectKBest(f_classif, k=80)),
                     (
                         "model",
-                        LogisticRegression(
-                            max_iter=2000, class_weight="balanced", C=1.0
-                        ),
+                        LogisticRegression(max_iter=2000, class_weight="balanced", C=1.0),
                     ),
                 ]
             ),
@@ -377,9 +368,7 @@ def run_audio():
                     ("smote", SMOTE(random_state=SEED, k_neighbors=5)),
                     (
                         "model",
-                        RandomForestClassifier(
-                            n_estimators=500, random_state=SEED, n_jobs=-1
-                        ),
+                        RandomForestClassifier(n_estimators=500, random_state=SEED, n_jobs=-1),
                     ),
                 ]
             ),
@@ -443,9 +432,7 @@ def run_audio_regression_quadrant(frame, X, feature_cols, splitter):
 
         v_pred = v_model.predict(x_test)
         a_pred = a_model.predict(x_test)
-        predicted = [
-            quadrant_from_values(v, a, midpoint=5.0) for v, a in zip(v_pred, a_pred)
-        ]
+        predicted = [quadrant_from_values(v, a, midpoint=5.0) for v, a in zip(v_pred, a_pred)]
         actual = y.iloc[test_index]
 
         accuracies.append(accuracy_score(actual, predicted))
@@ -570,9 +557,7 @@ RUNNERS = {"symbolic": run_symbolic, "lyrics": run_lyrics, "audio": run_audio}
 
 def main() -> None:
     parser = ArgumentParser()
-    parser.add_argument(
-        "--modality", choices=["all", *RUNNERS], default="all"
-    )
+    parser.add_argument("--modality", choices=["all", *RUNNERS], default="all")
     args = parser.parse_args()
     targets = RUNNERS.keys() if args.modality == "all" else [args.modality]
     for name in targets:

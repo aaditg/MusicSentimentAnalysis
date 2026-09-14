@@ -22,8 +22,9 @@ LYRICS_WEIGHT = 0.6
 C = 1.0
 
 
-def train(raw_dir: Path = RAW, processed_dir: Path = PROCESSED,
-          model_path: Path = MODEL_PATH) -> Path:
+def train(
+    raw_dir: Path = RAW, processed_dir: Path = PROCESSED, model_path: Path = MODEL_PATH
+) -> Path:
     frame, labels, audio_columns = load_bimodal(raw_dir, processed_dir)
     model = LateFusion(audio_columns, weight=LYRICS_WEIGHT, C=C)
     model.fit(frame, labels)
@@ -40,8 +41,7 @@ def _row(audio_path: Path, lyrics_path: Path, audio_columns: list[str]) -> pd.Da
     return frame
 
 
-def predict(audio_path: Path, lyrics_path: Path,
-            model_path: Path = MODEL_PATH) -> dict:
+def predict(audio_path: Path, lyrics_path: Path, model_path: Path = MODEL_PATH) -> dict:
     if not model_path.exists():
         raise FileNotFoundError(
             f"{model_path} is missing - run `python -m music_emotion.predict train` first"

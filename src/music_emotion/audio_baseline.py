@@ -68,8 +68,7 @@ def train_audio_baseline(data_path: Path) -> str:
     valence_pred = valence.predict(features.loc[test])
     arousal_pred = arousal.predict(features.loc[test])
     predictions = [
-        quadrant_from_values(v, a, midpoint=5.0)
-        for v, a in zip(valence_pred, arousal_pred)
+        quadrant_from_values(v, a, midpoint=5.0) for v, a in zip(valence_pred, arousal_pred)
     ]
 
     importance = pd.Series(

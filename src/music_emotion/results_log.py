@@ -76,9 +76,7 @@ def rebuild_journal(results_dir: Path = RESULTS_DIR) -> None:
             continue
         lines.append(f"## {modality.capitalize()}")
         lines.append("")
-        lines.append(
-            "| # | Experiment | Accuracy | Macro-F1 | Balanced acc | Config |"
-        )
+        lines.append("| # | Experiment | Accuracy | Macro-F1 | Balanced acc | Config |")
         lines.append("|---|---|---|---|---|---|")
 
         best_index = None

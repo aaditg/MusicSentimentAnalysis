@@ -74,9 +74,7 @@ def cv_classification(
         accuracies.append(accuracy_score(actual, predicted))
         macro_f1s.append(f1_score(actual, predicted, average="macro", zero_division=0))
         balanced.append(balanced_accuracy_score(actual, predicted))
-        fold_f1 = f1_score(
-            actual, predicted, labels=labels, average=None, zero_division=0
-        )
+        fold_f1 = f1_score(actual, predicted, labels=labels, average=None, zero_division=0)
         for label, score in zip(labels, fold_f1):
             per_class[label].append(score)
 
@@ -113,9 +111,7 @@ def nested_cv_search(
     chosen: list[dict] = []
 
     for train_index, test_index in outer_cv.split(np.zeros(len(y)), y, groups):
-        search = GridSearchCV(
-            clone(estimator), param_grid, scoring=scoring, cv=inner_cv, n_jobs=-1
-        )
+        search = GridSearchCV(clone(estimator), param_grid, scoring=scoring, cv=inner_cv, n_jobs=-1)
         x_train = _take(X, train_index)
         y_train = y.iloc[train_index]
         if groups_arr is not None:

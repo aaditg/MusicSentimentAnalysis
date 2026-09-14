@@ -44,9 +44,7 @@ def _modality_pipeline(kind: str, audio_columns) -> Pipeline:
         transformer = ("lyrics", _lyrics_vectorizer(), "text")
     else:
         transformer = ("audio", _audio_pipeline(), audio_columns)
-    return Pipeline(
-        [("pre", ColumnTransformer([transformer])), ("model", LinearSVC(C=1.0))]
-    )
+    return Pipeline([("pre", ColumnTransformer([transformer])), ("model", LinearSVC(C=1.0))])
 
 
 def run_ablation(raw_dir: Path = RAW, processed_dir: Path = PROCESSED) -> str:
@@ -55,9 +53,7 @@ def run_ablation(raw_dir: Path = RAW, processed_dir: Path = PROCESSED) -> str:
 
     scores = {}
     for name, kind in [("Lyrics only", "lyrics"), ("Audio only", "audio")]:
-        result = cv_classification(
-            _modality_pipeline(kind, audio_columns), frame, labels, splitter
-        )
+        result = cv_classification(_modality_pipeline(kind, audio_columns), frame, labels, splitter)
         scores[name] = result
         print(f"[ablation] {name}: {result.summary()}")
 
@@ -87,8 +83,7 @@ def run_ablation(raw_dir: Path = RAW, processed_dir: Path = PROCESSED) -> str:
         f"- Marginal value of **adding audio** to lyrics: {fused_f1 - lyrics_f1:+.3f} macro-F1",
         f"- Marginal value of **adding lyrics** to audio: {fused_f1 - audio_f1:+.3f} macro-F1",
         "",
-        "Per-class F1 (fused): "
-        + ", ".join(f"{k}={v:.3f}" for k, v in fused.per_class_f1.items()),
+        "Per-class F1 (fused): " + ", ".join(f"{k}={v:.3f}" for k, v in fused.per_class_f1.items()),
         "",
     ]
 

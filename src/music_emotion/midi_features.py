@@ -39,9 +39,7 @@ def note_features(path: Path) -> dict[str, float]:
             velocities.append(message.velocity)
             onsets.append(current_time)
             active.setdefault(message.note, []).append(current_time)
-        elif message.type == "note_off" or (
-            message.type == "note_on" and message.velocity == 0
-        ):
+        elif message.type == "note_off" or (message.type == "note_on" and message.velocity == 0):
             starts = active.get(message.note, [])
             if starts:
                 durations.append(current_time - starts.pop(0))

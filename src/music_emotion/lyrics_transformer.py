@@ -96,9 +96,7 @@ def train_transformer(train, test, epochs: int, batch_size: int) -> dict:
     tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
 
     def encode(texts):
-        return tokenizer(
-            list(texts), truncation=True, padding=True, max_length=MAX_LENGTH
-        )
+        return tokenizer(list(texts), truncation=True, padding=True, max_length=MAX_LENGTH)
 
     class LyricsDataset(torch.utils.data.Dataset):
         def __init__(self, texts, label_ids):
@@ -116,9 +114,7 @@ def train_transformer(train, test, epochs: int, batch_size: int) -> dict:
     train_ds = LyricsDataset(train["text"], [label_to_id[q] for q in train["quadrant"]])
     test_ds = LyricsDataset(test["text"], [label_to_id[q] for q in test["quadrant"]])
 
-    model = AutoModelForSequenceClassification.from_pretrained(
-        MODEL_NAME, num_labels=len(labels)
-    )
+    model = AutoModelForSequenceClassification.from_pretrained(MODEL_NAME, num_labels=len(labels))
 
     args = TrainingArguments(
         output_dir="results/_distilbert",

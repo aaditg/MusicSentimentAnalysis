@@ -49,7 +49,5 @@ def format_dataset_table() -> str:
     lines.append(f"{'Name':<14}{'Modality':<20}{'Labels':<30}{'Use case'}")
     lines.append("-" * 84)
     for item in DATASETS:
-        lines.append(
-            f"{item.name:<14}{item.modality:<20}{item.labels:<30}{item.use_case}"
-        )
+        lines.append(f"{item.name:<14}{item.modality:<20}{item.labels:<30}{item.use_case}")
     return "\n".join(lines)

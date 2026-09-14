@@ -24,7 +24,6 @@ SEED = 42
 
 
 class LateFusion(BaseEstimator, ClassifierMixin):
-
     def __init__(self, audio_columns, weight: float = 0.5, C: float = 1.0):
         self.audio_columns = audio_columns
         self.weight = weight
@@ -32,12 +31,16 @@ class LateFusion(BaseEstimator, ClassifierMixin):
 
     def _build(self):
         lyrics = Pipeline(
-            [("pre", ColumnTransformer([("lyrics", _lyrics_vectorizer(), "text")])),
-             ("model", LinearSVC(C=self.C))]
+            [
+                ("pre", ColumnTransformer([("lyrics", _lyrics_vectorizer(), "text")])),
+                ("model", LinearSVC(C=self.C)),
+            ]
         )
         audio = Pipeline(
-            [("pre", ColumnTransformer([("audio", _audio_pipeline(), self.audio_columns)])),
-             ("model", LinearSVC(C=self.C))]
+            [
+                ("pre", ColumnTransformer([("audio", _audio_pipeline(), self.audio_columns)])),
+                ("model", LinearSVC(C=self.C)),
+            ]
         )
         return lyrics, audio
 
@@ -68,9 +71,7 @@ def _lyrics_vectorizer() -> FeatureUnion:
             ("word", TfidfVectorizer(max_features=10000, ngram_range=(1, 2))),
             (
                 "char",
-                TfidfVectorizer(
-                    analyzer="char_wb", ngram_range=(3, 5), max_features=20000
-                ),
+                TfidfVectorizer(analyzer="char_wb", ngram_range=(3, 5), max_features=20000),
             ),
         ]
     )
@@ -215,14 +216,10 @@ def train_fusion_baseline(raw_dir: Path = RAW, processed_dir: Path = PROCESSED) 
         )
     )
 
-    best_single = max(
-        results["Lyrics only"].macro_f1_mean, results["Audio only"].macro_f1_mean
-    )
+    best_single = max(results["Lyrics only"].macro_f1_mean, results["Audio only"].macro_f1_mean)
     delta = results["Fused (audio + lyrics)"].macro_f1_mean - best_single
     lines.append("")
-    lines.append(
-        f"Fusion vs best single modality (macro-F1): {delta:+.3f}"
-    )
+    lines.append(f"Fusion vs best single modality (macro-F1): {delta:+.3f}")
     return "\n".join(lines)
 
 

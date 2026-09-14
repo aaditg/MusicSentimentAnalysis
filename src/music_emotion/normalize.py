@@ -36,13 +36,7 @@ def normalize_emopia(raw_dir: Path, output_dir: Path) -> Path:
 
 
 def normalize_deam(raw_dir: Path, output_dir: Path) -> Path:
-    source_dir = (
-        raw_dir
-        / "deam"
-        / "annotations"
-        / "annotations averaged per song"
-        / "song_level"
-    )
+    source_dir = raw_dir / "deam" / "annotations" / "annotations averaged per song" / "song_level"
     files = sorted(source_dir.glob("static_annotations_averaged_songs_*.csv"))
     if not files:
         raise FileNotFoundError("DEAM static labels are missing")
@@ -51,9 +45,7 @@ def normalize_deam(raw_dir: Path, output_dir: Path) -> Path:
     frame = frame.rename(columns={"song_id": "sample_id"})
     frame["source"] = "deam"
     frame["quadrant"] = frame.apply(
-        lambda row: quadrant_from_values(
-            row["valence_mean"], row["arousal_mean"], midpoint=5.0
-        ),
+        lambda row: quadrant_from_values(row["valence_mean"], row["arousal_mean"], midpoint=5.0),
         axis=1,
     )
     frame[["valence_class", "arousal_class"]] = frame["quadrant"].apply(
@@ -82,10 +74,7 @@ def normalize_merge_lyrics(raw_dir: Path, output_dir: Path) -> Path:
     frame["source"] = "merge_lyrics"
     frame["lyrics_path"] = frame.apply(
         lambda row: str(
-            Path("merge")
-            / "MERGE_Lyrics_Complete"
-            / row["quadrant"]
-            / f"{row['sample_id']}.txt"
+            Path("merge") / "MERGE_Lyrics_Complete" / row["quadrant"] / f"{row['sample_id']}.txt"
         ),
         axis=1,
     )
@@ -115,10 +104,7 @@ def normalize_merge_audio(raw_dir: Path, output_dir: Path) -> Path:
     frame["source"] = "merge_audio"
     frame["audio_path"] = frame.apply(
         lambda row: str(
-            Path("merge")
-            / "MERGE_Audio_Complete"
-            / row["quadrant"]
-            / f"{row['sample_id']}.mp3"
+            Path("merge") / "MERGE_Audio_Complete" / row["quadrant"] / f"{row['sample_id']}.mp3"
         ),
         axis=1,
     )

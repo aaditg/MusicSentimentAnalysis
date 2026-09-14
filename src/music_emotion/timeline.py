@@ -184,9 +184,7 @@ def render_svg(windows: list[Window], title: str, subtitle: str, width: int = 90
     plot_width = width - left - right
 
     span = windows[-1].end - windows[0].start
-    limit = max(
-        1e-6, max(max(abs(w.valence), abs(w.arousal)) for w in windows) * 1.15
-    )
+    limit = max(1e-6, max(max(abs(w.valence), abs(w.arousal)) for w in windows) * 1.15)
 
     def x_of(t: float) -> float:
         return left + plot_width * ((t - windows[0].start) / span)

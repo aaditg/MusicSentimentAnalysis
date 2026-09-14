@@ -96,7 +96,7 @@ def classify_one(client, model: str, shots: list[dict], lyrics: str) -> str | No
                 if any(hint in str(exc).lower() for hint in _PARAM_ERR_HINTS):
                     param_failed = True
                     continue
-                wait = min(2 ** attempt, 30)
+                wait = min(2**attempt, 30)
                 print(f"  retry {attempt + 1}/{MAX_RETRIES} after error: {exc} (sleep {wait}s)")
                 time.sleep(wait)
                 break
@@ -140,8 +140,7 @@ def run_model(client, model: str, strategy: str, train, test) -> dict:
         try:
             with ThreadPoolExecutor(max_workers=MAX_WORKERS) as pool:
                 futures = {
-                    pool.submit(classify_one, client, model, shots, row.text): row
-                    for row in todo
+                    pool.submit(classify_one, client, model, shots, row.text): row for row in todo
                 }
                 done = 0
                 for future in as_completed(futures):
@@ -149,8 +148,7 @@ def run_model(client, model: str, strategy: str, train, test) -> dict:
                     predicted = future.result() or "Q3"
                     cache[str(row.sample_id)] = predicted
                     handle.write(
-                        json.dumps({"sample_id": str(row.sample_id), "predicted": predicted})
-                        + "\n"
+                        json.dumps({"sample_id": str(row.sample_id), "predicted": predicted}) + "\n"
                     )
                     handle.flush()
                     done += 1
