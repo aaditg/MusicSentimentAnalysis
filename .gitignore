@@ -14,3 +14,4 @@ results/*
 models/
 results/timelines/
 !results/figures/
+*.egg-info/
