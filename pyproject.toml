@@ -12,6 +12,7 @@ dependencies = [
     "pandas",
     "scikit-learn",
     "scipy",
+    "imbalanced-learn",
     "joblib",
     "pyyaml",
     "mido",
